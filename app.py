@@ -1,43 +1,57 @@
-from flask import Flask, render_template, request, redirect, flash
-from werkzeug.exceptions import HTTPException
-from werkzeug.wrappers import response
-from controllers import dataBases
+from flask import Flask,render_template, request, flash,redirect
 
-app= Flask(__name__)
+import mysql.connector
 
-@app.get('/')
-def home():
-    
+app = Flask(__name__)
+
+app.secret_key='mysecretkey'
+
+
+
+
+@app.route('/')
+def inicio():
+
     return render_template('index.html')
 
 
-@app.get('/listar')
-def listar():
-    home(render_template('index.html'))
-    data = request.form
-
-    DB = dataBases.coneccion(
-        host=data["hostname"],
-        user=data["usuario"],
-        password=data["contrasena"],
-        port=data["puerto"]
+@app.route('/listar',methods=['POST'])
+def coneccion():
+    port=request.form['port']
+    DB = mysql.connector.connect(
+        host=request.form['hostname'],
+        user=request.form['user'],
+        password=request.form['contrasena'],
+        port=port
     )
-    verbases = dataBases.getDatabases(DB)
-    return render_template('listar.html',Bases=verbases)
- 
-@app.post('/crear')
+    cursor = DB.cursor(dictionary=True)
+    cursor.execute('SHOW DATABASES')
+    listado=cursor.fetchall()
+    flash('Listado de bases de datos generada exitosamente')
+    return render_template('index.html',bases=listado)
+
+
+@app.get('/nuevo')
+def crearnuevo():
+
+    return render_template('crear.html')
+
+
+@app.route('/crear',methods=['POST'])
 def crearBase():
-   data = request.form
-   
-    DB = dataBases.coneccion(
-        host=data["hostname"],
-        user=data["usuario"],
-        password=data["contrasena"],
-        port=data["puerto"],
+    port=request.form['port']
+    nombre= request.form['nombre']
+    DB = mysql.connector.connect(
+        host=request.form['hostname'],
+        user=request.form['user'],
+        password=request.form['contrasena'],
+        port=port
     )
-    nombre=data["nombre"]
-    nuevo = dataBases.crearBase(DB,nombre)
-    return render_template('index.html',nuevo)
-
+    cursor = DB.cursor(dictionary=True)
+    cursor.execute(f"CREATE DATABASE {nombre}")
+    DB.commit()
+    cursor.close()
+    flash('Base de datos creada exitosamente')
+    return redirect('/nuevo')
 
 app.run(debug=True)

@@ -6,4 +6,5 @@ MarkupSafe==2.0.1
 mysql-connector-python==8.0.26
 protobuf==3.18.1
 Werkzeug==2.0.2
+pip install pyMysql
 
